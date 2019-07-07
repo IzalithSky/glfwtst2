@@ -6,7 +6,6 @@
 #include <iostream>
 #include <string>
 
-/*
 static const struct
 {
     float x, y, z;
@@ -22,51 +21,24 @@ static const struct
     {   0.f, -0.6f,   0.f, 0.f, 0.f, 1.f },    
 };
 
-static const char* vertex_shader_text =
-    "#version 110\n"
-    "uniform mat4 MVP;\n"
-    "attribute vec3 vCol;\n"
+const char *vertex_shader_text =
+    "#version 330 core\n"
     "attribute vec3 vPos;\n"
-    "varying vec3 color;\n"
+    "attribute vec3 vCol;\n"
+    "out vec3 color;\n"
     "void main()\n"
     "{\n"
-    "    gl_Position = MVP * vec4(vPos, 1.0);\n"
-    "    color = vCol;\n"
-    "}\n";
-
-static const char* fragment_shader_text =
-    "#version 110\n"
-    "varying vec3 color;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_FragColor = vec4(color, 1.0);\n"
-    "}\n";
-*/
-
-const float vertices[] = {
-    // positions         // colors
-     0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,  // bottom right
-    -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,  // bottom left
-     0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f   // top 
-
-};
-
-const char *vertex_shader_text ="#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "layout (location = 1) in vec3 aColor;\n"
-    "out vec3 ourColor;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos, 1.0);\n"
-    "   ourColor = aColor;\n"
+    "   gl_Position = vec4(vPos, 1.0);\n"
+    "   color = vCol;\n"
     "}\0";
 
-const char *fragment_shader_text = "#version 330 core\n"
+const char *fragment_shader_text =
+    "#version 330 core\n"
+    "varying vec3 color;\n"
     "out vec4 FragColor;\n"
-    "in vec3 ourColor;\n"
     "void main()\n"
     "{\n"
-    "   FragColor = vec4(ourColor, 1.0f);\n"
+    "   gl_FragColor = vec4(color, 1.0f);\n"
     "}\n\0";
 
 static void error_callback(int error, const char* description)
@@ -235,26 +207,17 @@ int main(void)
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);    
     
-    // GLint mvp_location = glGetUniformLocation(program, "MVP");
     GLint vpos_location = glGetAttribLocation(program, "vPos");
     GLint vcol_location = glGetAttribLocation(program, "vCol");
     
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
-                          6 * sizeof(float), (void*) 0);
-                          
-    // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                          // sizeof(vertices[0]), (void*) 0);
+                          sizeof(vertices[0]), (void*) 0);
     glEnableVertexAttribArray(vpos_location);
 
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          6 * sizeof(float), (void*) (sizeof(float) * 3));
-
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
-                          // sizeof(vertices[0]), (void*) (sizeof(float) * 3));
+                          sizeof(vertices[0]), (void*) (sizeof(float) * 3));
     glEnableVertexAttribArray(vcol_location);
-    
-    // glBindBuffer(GL_ARRAY_BUFFER, 0);
-    // glBindVertexArray(0);
+
     glUseProgram(program);
     
     while (!glfwWindowShouldClose(window))
@@ -268,33 +231,6 @@ int main(void)
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    /*
-    while (!glfwWindowShouldClose(window))
-    {
-        float ratio;
-        int width, height;
-        mat4x4 m, p, mvp;
-        
-        glfwGetFramebufferSize(window, &width, &height);
-        ratio = width / (float) height;
-        
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT);
-        
-        mat4x4_identity(m);
-        mat4x4_rotate_Z(m, m, (float) glfwGetTime());
-        mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-        mat4x4_mul(mvp, p, m);
-        
-        glUseProgram(program);
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
-        
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-    */
     
     glDeleteVertexArrays(1, &vertex_array);
     glDeleteBuffers(1, &vertex_buffer);
