@@ -12,13 +12,15 @@ static const struct
     float r, g, b;
 } vertices[] =
 {
-    { -0.1f,  0.1f, -0.9f, 1.f, 0.f, 0.f },
-    {  0.8f,  0.2f, -0.9f, 0.f, 1.f, 0.f },
-    {   0.f, -1.0f, -0.9f, 0.f, 0.f, 1.f },
+    {   0.f,  0.6f,   0.f, 0.f, 0.f, 1.f }, // 0 top
+    {  0.4f,  0.0f,   0.f, 0.f, 1.f, 0.f }, // 1 right
+    { -0.4f,  0.0f,   0.f, 1.f, 0.f, 0.f }, // 2 left
+    {   0.f, -0.6f,   0.f, 0.f, 0.f, 1.f }, // 3 bot
+};
 
-    { -0.6f,  0.4f,   0.f, 1.f, 0.f, 0.f },
-    {  0.6f,  0.4f,   0.f, 0.f, 1.f, 0.f },
-    {   0.f, -0.6f,   0.f, 0.f, 0.f, 1.f },    
+unsigned int indices[] = {
+    2, 0, 1,
+    1, 3, 2
 };
 
 const char *vertex_shader_text =
@@ -202,10 +204,16 @@ int main(void)
     GLuint vertex_buffer;
     glGenBuffers(1, &vertex_buffer);
     
+    GLuint element_buffer;
+    glGenBuffers(1, &element_buffer);
+    
     glBindVertexArray(vertex_array);
     
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);    
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     
     GLint vpos_location = glGetAttribLocation(program, "vPos");
     GLint vcol_location = glGetAttribLocation(program, "vCol");
@@ -226,13 +234,15 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
         
         glBindVertexArray(vertex_array);
-        glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
+        // glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
+        glDrawElements(GL_TRIANGLES, sizeof(indices), GL_UNSIGNED_INT, 0);
         
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
     
     glDeleteVertexArrays(1, &vertex_array);
+    glDeleteBuffers(1, &element_buffer);
     glDeleteBuffers(1, &vertex_buffer);
     glfwDestroyWindow(window);
     glfwTerminate();
