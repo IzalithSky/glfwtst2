@@ -2,50 +2,60 @@
 
 #include "glad.h"
 #include <GLFW/glfw3.h>
-#include "linmath.h"
 #include <iostream>
 #include <string>
+#include "stb_image.h"
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 static const struct
 {
     float x, y, z;
     float r, g, b;
+    float tx, ty;
 } vertices[] =
 {
-    {   0.f,  0.6f,   0.f, 0.f, 0.f, 1.f }, // 0 top
-    {  0.4f,  0.0f,   0.f, 0.f, 1.f, 0.f }, // 1 right
-    { -0.4f,  0.0f,   0.f, 1.f, 0.f, 0.f }, // 2 left
-    {   0.f, -0.6f,   0.f, 0.f, 0.f, 1.f }, // 3 bot
+    { -0.9f, -0.9f,   0.f,    1.f, 0.f, 0.f,    1.0f,  1.0f},
+    { -0.9f,  0.9f,   0.f,    0.f, 1.f, 0.f,    1.0f,  0.0f},
+    {  0.9f, -0.9f,   0.f,    0.f, 1.f, 0.f,    0.0f,  1.0f},
+    {  0.9f,  0.9f,   0.f,    0.f, 0.f, 1.f,    0.0f,  0.0f}
 };
 
 unsigned int indices[] = {
-    2, 0, 1,
-    1, 3, 2
+    0, 1, 2,
+    1, 2, 3
 };
 
 const char *vertex_shader_text =
     "#version 330 core\n"
-    "attribute vec3 vPos;\n"
-    "attribute vec3 vCol;\n"
+    "in vec3 vPos;\n"
+    "in vec3 vCol;\n"
+    "in vec2 vTxt;\n"
     "out vec3 color;\n"
+    "out vec2 txt;\n"
+    "uniform mat4 transform;\n"
     "void main()\n"
     "{\n"
-    "   gl_Position = vec4(vPos, 1.0);\n"
+    "   gl_Position = transform * vec4(vPos, 1.0);\n"
     "   color = vCol;\n"
+    "   txt = vTxt;\n"
     "}\0";
 
 const char *fragment_shader_text =
     "#version 330 core\n"
-    "varying vec3 color;\n"
     "out vec4 FragColor;\n"
+    "in vec3 color;\n"
+    "in vec2 txt;\n"
+    "uniform sampler2D txtPic;\n"
     "void main()\n"
     "{\n"
-    "   gl_FragColor = vec4(color, 1.0f);\n"
+    "   FragColor = texture(txtPic, txt) * vec4(color, 1.0);\n"
     "}\n\0";
 
 static void error_callback(int error, const char* description)
 {
-    fprintf(stderr, "Error: %s\n", description);
+    std::cout << stderr << "Error: " << description << std::endl;
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -72,7 +82,7 @@ bool initGLFW(GLFWwindow* &window)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
-    window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+    window = glfwCreateWindow(379, 480, "OGL tst", NULL, NULL);
     if (!window)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -187,6 +197,8 @@ bool makeProgramm(
 
 int main(void)
 {
+    // === init ===========================================
+    
     GLFWwindow* window;
     
     if (!initGLFW(window))
@@ -197,6 +209,8 @@ int main(void)
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
+    
+    // === vao, vbo, ebo ==================================
 
     GLuint vertex_array;
     glGenVertexArrays(1, &vertex_array);
@@ -217,6 +231,7 @@ int main(void)
     
     GLint vpos_location = glGetAttribLocation(program, "vPos");
     GLint vcol_location = glGetAttribLocation(program, "vCol");
+    GLint vtxt_location = glGetAttribLocation(program, "vTxt");
     
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), (void*) 0);
@@ -225,6 +240,38 @@ int main(void)
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), (void*) (sizeof(float) * 3));
     glEnableVertexAttribArray(vcol_location);
+    
+    glVertexAttribPointer(vtxt_location, 2, GL_FLOAT, GL_FALSE, 
+                          sizeof(vertices[0]), (void*) (sizeof(float) * 6));
+    glEnableVertexAttribArray(vtxt_location);
+    
+    // === texture ========================================
+    
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    
+    // set the texture wrapping/filtering options (on the currently bound texture object)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    // load and generate the texture
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("../resources/gato.png", &width, &height, &nrChannels, 0);
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        stbi_image_free(data);
+    } else {
+        std::cout << "Failed to load texture" << std::endl;
+        stbi_image_free(data);
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
+    
+    // === draw ===========================================
 
     glUseProgram(program);
     
@@ -233,13 +280,25 @@ int main(void)
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         
-        glBindVertexArray(vertex_array);
-        // glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
+        glBindTexture(GL_TEXTURE_2D, texture);
+        
+        // === transform ======================================
+        
+        glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+        // transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
+        transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        
+        unsigned int transformLoc = glGetUniformLocation(program, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+        
         glDrawElements(GL_TRIANGLES, sizeof(indices), GL_UNSIGNED_INT, 0);
         
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    
+    // === clear ==========================================
+    
     
     glDeleteVertexArrays(1, &vertex_array);
     glDeleteBuffers(1, &element_buffer);
