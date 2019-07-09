@@ -34,10 +34,12 @@ const char *vertex_shader_text =
     "in vec2 vTxt;\n"
     "out vec3 color;\n"
     "out vec2 txt;\n"
-    "uniform mat4 transform;\n"
+    "uniform mat4 model;\n"
+    "uniform mat4 view;\n"
+    "uniform mat4 projection;\n"
     "void main()\n"
     "{\n"
-    "   gl_Position = transform * vec4(vPos, 1.0);\n"
+    "   gl_Position = projection * view * model * vec4(vPos, 1.0);\n"
     "   color = vCol;\n"
     "   txt = vTxt;\n"
     "}\0";
@@ -52,6 +54,9 @@ const char *fragment_shader_text =
     "{\n"
     "   FragColor = texture(txtPic, txt) * vec4(color, 1.0);\n"
     "}\n\0";
+    
+const unsigned int SCR_WIDTH = 379;
+const unsigned int SCR_HEIGHT = 480;
 
 static void error_callback(int error, const char* description)
 {
@@ -284,12 +289,21 @@ int main(void)
         
         // === transform ======================================
         
-        glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        // transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
-        transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 model         = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+        glm::mat4 view          = glm::mat4(1.0f);
+        glm::mat4 projection    = glm::mat4(1.0f);
         
-        unsigned int transformLoc = glGetUniformLocation(program, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        view  = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        
+        unsigned int modelLoc = glGetUniformLocation(program, "model");
+        unsigned int viewLoc = glGetUniformLocation(program, "view");
+        unsigned int projectionLoc = glGetUniformLocation(program, "projection");
+        
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+        glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, &projection[0][0]);
         
         glDrawElements(GL_TRIANGLES, sizeof(indices), GL_UNSIGNED_INT, 0);
         
