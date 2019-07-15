@@ -8,6 +8,7 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "shader_loader.h"
 
 static const struct
 {
@@ -26,34 +27,6 @@ unsigned int indices[] = {
     0, 1, 2,
     1, 2, 3
 };
-
-const char *vertex_shader_text =
-    "#version 330 core\n"
-    "in vec3 vPos;\n"
-    "in vec3 vCol;\n"
-    "in vec2 vTxt;\n"
-    "out vec3 color;\n"
-    "out vec2 txt;\n"
-    "uniform mat4 model;\n"
-    "uniform mat4 view;\n"
-    "uniform mat4 projection;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = projection * view * model * vec4(vPos, 1.0);\n"
-    "   color = vCol;\n"
-    "   txt = vTxt;\n"
-    "}\0";
-
-const char *fragment_shader_text =
-    "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "in vec3 color;\n"
-    "in vec2 txt;\n"
-    "uniform sampler2D txtPic;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = texture(txtPic, txt) * vec4(color, 1.0);\n"
-    "}\n\0";
     
 const unsigned int SCR_WIDTH = 379;
 const unsigned int SCR_HEIGHT = 480;
@@ -186,100 +159,6 @@ bool initGLFW(GLFWwindow* &window)
     return true;
 }
 
-int load_shader(
-    GLuint &shader,
-    GLenum shader_type,
-    const char* shader_text,
-    std::string error_str)
-{
-    int  success;
-    char infoLog[512];
-    
-    shader = glCreateShader(shader_type);
-    glShaderSource(shader, 1, &shader_text, NULL);
-    glCompileShader(shader);
-    
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
-        std::cout << error_str << infoLog << std::endl;
-    }
-    
-    return success;
-}
-
-bool load_vertex_shader(GLuint &shader, const char* shader_text)
-{
-    int success = load_shader(
-        shader,
-        GL_VERTEX_SHADER,
-        shader_text,
-        "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n");
-        
-    return success ? true : false;
-}
-
-bool load_fragment_shader(GLuint &shader, const char* shader_text)
-{
-    int success = load_shader(
-        shader,
-        GL_FRAGMENT_SHADER,
-        shader_text,
-        "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n");
-        
-    return success ? true : false;
-}
-
-bool load_program(GLuint &program, GLuint vertex_shader, GLuint fragment_shader)
-{
-    program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
-
-    int  success;
-    char infoLog[512];
-    glGetShaderiv(program, GL_LINK_STATUS, &success);
-    if (!success)
-    {
-        glGetProgramInfoLog(program, 512, NULL, infoLog);
-        std::cout << "ERROR::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    
-    return success ? true : false;
-}
-
-bool makeProgramm(
-    GLuint &program,
-    const char* vertex_shader_text,
-    const char* fragment_shader_text)
-{
-    GLuint vertex_shader, fragment_shader;
-    
-    if (!load_vertex_shader(vertex_shader, vertex_shader_text))
-        return false;
-    
-    if (!load_fragment_shader(fragment_shader, fragment_shader_text))
-        return false;
-
-    if (!load_program(program, vertex_shader, fragment_shader))
-        return false;
-    
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader); 
-    
-    return true;
-}
-
-void processInput(GLFWwindow *window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-
-}
-
 int main(void)
 {
     // === init ===========================================
@@ -290,7 +169,7 @@ int main(void)
         exit(EXIT_FAILURE);
     
     GLuint program;
-    if (!makeProgramm(program, vertex_shader_text, fragment_shader_text)) {
+    if (!getProgram("vertex_shader.glsl", "fragment_shader.glsl", program)) {
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
@@ -315,16 +194,16 @@ int main(void)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     
     GLint vpos_location = glGetAttribLocation(program, "vPos");
-    GLint vcol_location = glGetAttribLocation(program, "vCol");
+    // GLint vcol_location = glGetAttribLocation(program, "vCol");
     GLint vtxt_location = glGetAttribLocation(program, "vTxt");
     
     glVertexAttribPointer(vpos_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), (void*) 0);
     glEnableVertexAttribArray(vpos_location);
 
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(vertices[0]), (void*) (sizeof(float) * 3));
-    glEnableVertexAttribArray(vcol_location);
+    // glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
+                          // sizeof(vertices[0]), (void*) (sizeof(float) * 3));
+    // glEnableVertexAttribArray(vcol_location);
     
     glVertexAttribPointer(vtxt_location, 2, GL_FLOAT, GL_FALSE, 
                           sizeof(vertices[0]), (void*) (sizeof(float) * 6));
@@ -367,10 +246,6 @@ int main(void)
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
-
-        // input
-        // -----
-        processInput(window);
 
         // === clear ==========================================        
         
