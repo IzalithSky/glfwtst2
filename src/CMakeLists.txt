@@ -14,6 +14,7 @@ add_executable(tst
     glad.c
     stb_image.cpp
     shader_loader.cpp
+    oglrenderer.cpp
 ) 
 
 include_directories(${GLFW3_INCLUDE})
