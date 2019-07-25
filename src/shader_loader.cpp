@@ -1,9 +1,10 @@
-#include "shader_loader.h"
-
-#include "glm/glm.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
+
+#include <glm.hpp>
+
+#include "shader_loader.h"
 
 int load_shader(
     GLuint &shader,

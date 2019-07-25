@@ -12,26 +12,39 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 configure_file(
-	"${PROJECT_SOURCE_DIR}/vertex_shader.glsl.in"
+	"${PROJECT_SOURCE_DIR}/resources/vertex_shader.glsl.in"
 	"${PROJECT_BINARY_DIR}/vertex_shader.glsl"
     COPYONLY)
 
 configure_file(
-	"${PROJECT_SOURCE_DIR}/fragment_shader.glsl.in"
+	"${PROJECT_SOURCE_DIR}/resources/fragment_shader.glsl.in"
 	"${PROJECT_BINARY_DIR}/fragment_shader.glsl"
+    COPYONLY)
+    
+configure_file(
+	"${PROJECT_SOURCE_DIR}/resources/gato.png"
+	"${PROJECT_BINARY_DIR}/gato.png"
     COPYONLY)
 
 add_subdirectory(libs/glfw-3.3)
 
+add_subdirectory(libs/glad)
+include_directories(libs/glad)
+
+add_subdirectory(libs/stb_image)
+include_directories(libs/stb_image)
+
+include_directories(libs/glm)
+
 add_executable(tst
-    main.cpp
-    glad.c
-    stb_image.cpp
-    shader_loader.cpp
-    oglrenderer.cpp
+    src/main.cpp
+    src/shader_loader.cpp
+    src/oglrenderer.cpp
 )
 
 target_link_libraries(tst glfw)
+target_link_libraries(tst glad)
+target_link_libraries(tst stb_image)
 
 add_custom_command(
     TARGET tst
