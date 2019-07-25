@@ -1,5 +1,3 @@
-#define GLFW_DLL 
-
 #include <iostream>
 #include <string>
 #include "stb_image.h"
