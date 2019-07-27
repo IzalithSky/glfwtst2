@@ -11,6 +11,8 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
 configure_file(
 	"${PROJECT_SOURCE_DIR}/resources/vertex_shader.glsl.in"
 	"${PROJECT_BINARY_DIR}/vertex_shader.glsl"
@@ -36,6 +38,8 @@ include_directories(libs/stb_image)
 
 include_directories(libs/glm)
 
+add_subdirectory(libs/assimp-4.0.1)
+
 add_executable(tst
     src/main.cpp
     src/shader_loader.cpp
@@ -45,6 +49,7 @@ add_executable(tst
 target_link_libraries(tst glfw)
 target_link_libraries(tst glad)
 target_link_libraries(tst stb_image)
+target_link_libraries(tst assimp)
 
 add_custom_command(
     TARGET tst
